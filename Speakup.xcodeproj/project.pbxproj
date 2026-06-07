@@ -124,9 +124,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1F96E1CE2FD5FF4000F97BDE /* LaunchScreen.storyboard in Resources */,
 				1F96E1CB2FD5FF4000F97BDE /* Assets.xcassets in Resources */,
-				1F96E1C92FD5FF3F00F97BDE /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
