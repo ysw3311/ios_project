@@ -207,6 +207,9 @@ NavigationController 기반, 모두 push 전환.
 4. **URLSession** — dataTask(with:completionHandler:) 패턴만 사용.
 5. **Storyboard 버전** — Xcode 12.5 호환 값으로 고정. 이보다 높은 값 사용 금지.
    - `toolsVersion="17701"`
-   - `plugIn version="17673"`
-   - `device` 태그, `colorMatched`, `appearance` 속성 사용 금지
+   - `targetRuntime="AppleCocoaTouch"` (공백 없음 — `"AppleCocoa Touch"` 쓰면 ibtool이 Unknown runtime 오류)
+   - `<plugIn>` 태그 사용 금지 (버전 불일치로 플러그인 로드 실패)
+   - `device` 태그 필수: `<device id="retina4_7" orientation="portrait" appearance="light"/>`
+   - `colorMatched="YES"` 필수
+   - `<viewLayoutGuide key="safeAreaLayoutGuide" id="..."/>` 각 view 안에 필수
    - 배경색은 `systemColor` 대신 명시적 RGB 값 사용 (`red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"`)
