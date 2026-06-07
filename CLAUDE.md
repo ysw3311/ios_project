@@ -206,7 +206,7 @@ NavigationController 기반, 모두 push 전환.
 3. **iOS 14 호환** — `UICollectionViewCompositionalLayout` 등 iOS 14 지원 확인 후 사용. `@available` 가드 없이 iOS 15+ API 호출 금지.
 4. **URLSession** — dataTask(with:completionHandler:) 패턴만 사용.
 5. **Storyboard 버전** — Xcode 12.5 호환 값으로 고정. 이보다 높은 값 사용 금지.
-   - `toolsVersion="17709"`
-   - `plugIn version="17703"`
+   - `toolsVersion="17701"`
+   - `plugIn version="17673"`
    - `device` 태그, `colorMatched`, `appearance` 속성 사용 금지
    - 배경색은 `systemColor` 대신 명시적 RGB 값 사용 (`red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"`)
