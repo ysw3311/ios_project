@@ -1,4 +1,5 @@
 import UIKit
+import AVFoundation
 
 class RecordingViewController: UIViewController {
 
@@ -65,7 +66,7 @@ class RecordingViewController: UIViewController {
 
     private var elapsedSeconds = 0
     private var timer: Timer?
-    private var waveTimer: Timer?
+    private var audioLevels: [Float] = []
 
     // MARK: - Lifecycle
 
@@ -76,12 +77,12 @@ class RecordingViewController: UIViewController {
         navigationItem.hidesBackButton = true
         setupLayout()
         stopButton.addTarget(self, action: #selector(stopButtonTapped), for: .touchUpInside)
-        startTimers()
+        startRecording()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        stopTimers()
+        timer?.invalidate()
     }
 
     // MARK: - Layout
@@ -112,20 +113,32 @@ class RecordingViewController: UIViewController {
         ])
     }
 
-    // MARK: - Timers
+    // MARK: - Recording
 
-    private func startTimers() {
+    private func startRecording() {
+        // 타이머 시작
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.tick()
         }
-        waveTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { [weak self] _ in
-            self?.waveformView.pushLevel(Float.random(in: 0.2...1.0))
-        }
-    }
 
-    private func stopTimers() {
-        timer?.invalidate()
-        waveTimer?.invalidate()
+        // RecordingService 연동 — 레벨 콜백으로 파형 업데이트
+        RecordingService.shared.onLevelUpdate = { [weak self] level in
+            self?.audioLevels.append(level)
+            self?.waveformView.pushLevel(level)
+        }
+        RecordingService.shared.startRecording()
+
+        // 시뮬레이터: RecordingService가 마이크를 못 열 수 있으므로 더미 파형 병행
+        #if targetEnvironment(simulator)
+        Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { [weak self] t in
+            guard let self = self, self.navigationController?.topViewController == self else {
+                t.invalidate(); return
+            }
+            let level = Float.random(in: 0.2...0.9)
+            self.audioLevels.append(level)
+            self.waveformView.pushLevel(level)
+        }
+        #endif
     }
 
     private func tick() {
@@ -138,16 +151,21 @@ class RecordingViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func stopButtonTapped() {
-        stopTimers()
+        timer?.invalidate()
+        stopButton.isEnabled = false
         statusLabel.text = "분석 중..."
         statusLabel.textColor = .secondaryLabel
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        let audioURL = RecordingService.shared.stopRecording()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self = self else { return }
             let vc = ResultViewController()
             vc.script = self.script
             vc.workspaceId = self.workspaceId
             vc.recordingDuration = self.elapsedSeconds
+            vc.audioFileURL = audioURL
+            vc.audioLevels = self.audioLevels
             self.navigationController?.pushViewController(vc, animated: true)
         }
     }
@@ -183,8 +201,8 @@ class WaveformView: UIView {
             let barHeight = max(4, level * rect.height)
             let x = CGFloat(i) * (barWidth + gap)
             let y = (rect.height - barHeight) / 2
-            let barRect = CGRect(x: x, y: y, width: barWidth, height: barHeight)
-            UIBezierPath(roundedRect: barRect, cornerRadius: 2).fill()
+            UIBezierPath(roundedRect: CGRect(x: x, y: y, width: barWidth, height: barHeight),
+                         cornerRadius: 2).fill()
         }
     }
 }

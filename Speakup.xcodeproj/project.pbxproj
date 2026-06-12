@@ -21,6 +21,10 @@
 		AA000003AA0000001B000002 /* WorkspaceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001B000002 /* WorkspaceStore.swift */; };
 		AA000003AA0000001B000003 /* WorkspaceDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001B000003 /* WorkspaceDetailViewController.swift */; };
 		AA000003AA0000001B000004 /* WorkspaceCreateViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001B000004 /* WorkspaceCreateViewController.swift */; };
+		AA000003AA0000001C000001 /* RecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000001 /* RecordingService.swift */; };
+		AA000003AA0000001C000002 /* ClovaSTTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000002 /* ClovaSTTService.swift */; };
+		AA000003AA0000001C000003 /* SpeechAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000003 /* SpeechAnalyzer.swift */; };
+		AA000004AA0000001C000004 /* Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000004 /* Config.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +44,10 @@
 		AA000002AA0000001B000002 /* WorkspaceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStore.swift; sourceTree = "<group>"; };
 		AA000002AA0000001B000003 /* WorkspaceDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceDetailViewController.swift; sourceTree = "<group>"; };
 		AA000002AA0000001B000004 /* WorkspaceCreateViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceCreateViewController.swift; sourceTree = "<group>"; };
+		AA000002AA0000001C000001 /* RecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingService.swift; sourceTree = "<group>"; };
+		AA000002AA0000001C000002 /* ClovaSTTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClovaSTTService.swift; sourceTree = "<group>"; };
+		AA000002AA0000001C000003 /* SpeechAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechAnalyzer.swift; sourceTree = "<group>"; };
+		AA000002AA0000001C000004 /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Config.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +99,16 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		AA000001AA0000001C000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA000002AA0000001C000001 /* RecordingService.swift */,
+				AA000002AA0000001C000002 /* ClovaSTTService.swift */,
+				AA000002AA0000001C000003 /* SpeechAnalyzer.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		1F96E1C02FD5FF3F00F97BDE /* Speakup */ = {
 			isa = PBXGroup;
 			children = (
@@ -99,6 +117,8 @@
 				1F96E1C52FD5FF3F00F97BDE /* HomeViewController.swift */,
 				AA000001AA0000001A000001 /* Screens */,
 				AA000001AA0000001B000001 /* Models */,
+				AA000001AA0000001C000001 /* Services */,
+				AA000002AA0000001C000004 /* Config.plist */,
 				1F96E1C72FD5FF3F00F97BDE /* Main.storyboard */,
 				1F96E1CA2FD5FF4000F97BDE /* Assets.xcassets */,
 				1F96E1CC2FD5FF4000F97BDE /* LaunchScreen.storyboard */,
@@ -165,6 +185,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1F96E1CB2FD5FF4000F97BDE /* Assets.xcassets in Resources */,
+				AA000004AA0000001C000004 /* Config.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,6 +207,9 @@
 				AA000003AA0000001B000002 /* WorkspaceStore.swift in Sources */,
 				AA000003AA0000001B000003 /* WorkspaceDetailViewController.swift in Sources */,
 				AA000003AA0000001B000004 /* WorkspaceCreateViewController.swift in Sources */,
+				AA000003AA0000001C000001 /* RecordingService.swift in Sources */,
+				AA000003AA0000001C000002 /* ClovaSTTService.swift in Sources */,
+				AA000003AA0000001C000003 /* SpeechAnalyzer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

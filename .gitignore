@@ -1,0 +1,14 @@
+# API Keys
+Speakup/Config.plist
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+
+# macOS
+.DS_Store
