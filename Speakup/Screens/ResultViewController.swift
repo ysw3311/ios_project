@@ -32,6 +32,34 @@ class ResultViewController: UIViewController {
     private var scoreBarViews: [ScoreBarView] = []
     private var barStack: UIStackView!
 
+    private let sttCard: UIView = {
+        let v = UIView()
+        v.backgroundColor = .secondarySystemBackground
+        v.layer.cornerRadius = 12
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    private let sttLabel: UILabel = {
+        let l = UILabel()
+        l.text = "STT 인식 결과"
+        l.font = .boldSystemFont(ofSize: 13)
+        l.textColor = .secondaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private let sttTextView: UITextView = {
+        let tv = UITextView()
+        tv.isEditable = false
+        tv.isScrollEnabled = false
+        tv.font = .systemFont(ofSize: 14)
+        tv.backgroundColor = .clear
+        tv.text = "—"
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        return tv
+    }()
+
     private let backButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("발표로 돌아가기", for: .normal)
@@ -102,6 +130,7 @@ class ResultViewController: UIViewController {
         speedScore   = result.speedScore
         silenceScore = result.silenceScore
         fillerScore  = result.fillerScore
+        sttTextView.text = result.sttText.isEmpty ? "(인식된 텍스트 없음)" : result.sttText
         finishAnalysis()
     }
 
@@ -111,6 +140,7 @@ class ResultViewController: UIViewController {
         silenceScore = Int.random(in: 10...20)
         fillerScore  = Int.random(in: 10...20)
         totalScore   = scriptScore + speedScore + silenceScore + fillerScore
+        sttTextView.text = "(STT 미연결 — 더미 점수)"
         finishAnalysis()
     }
 
@@ -170,6 +200,10 @@ class ResultViewController: UIViewController {
         barStack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(barStack)
 
+        // STT 카드
+        sttCard.addSubview(sttLabel)
+        sttCard.addSubview(sttTextView)
+        contentView.addSubview(sttCard)
         contentView.addSubview(backButton)
 
         NSLayoutConstraint.activate([
@@ -185,9 +219,22 @@ class ResultViewController: UIViewController {
             barStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             barStack.topAnchor.constraint(equalTo: sectionLabel.bottomAnchor, constant: 16),
 
+            sttCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            sttCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            sttCard.topAnchor.constraint(equalTo: barStack.bottomAnchor, constant: 28),
+
+            sttLabel.leadingAnchor.constraint(equalTo: sttCard.leadingAnchor, constant: 12),
+            sttLabel.topAnchor.constraint(equalTo: sttCard.topAnchor, constant: 12),
+            sttLabel.trailingAnchor.constraint(equalTo: sttCard.trailingAnchor, constant: -12),
+
+            sttTextView.leadingAnchor.constraint(equalTo: sttCard.leadingAnchor, constant: 8),
+            sttTextView.trailingAnchor.constraint(equalTo: sttCard.trailingAnchor, constant: -8),
+            sttTextView.topAnchor.constraint(equalTo: sttLabel.bottomAnchor, constant: 4),
+            sttTextView.bottomAnchor.constraint(equalTo: sttCard.bottomAnchor, constant: -8),
+
             backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             backButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
-            backButton.topAnchor.constraint(equalTo: barStack.bottomAnchor, constant: 36),
+            backButton.topAnchor.constraint(equalTo: sttCard.bottomAnchor, constant: 24),
             backButton.heightAnchor.constraint(equalToConstant: 52),
             backButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
         ])
