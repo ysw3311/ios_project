@@ -60,6 +60,46 @@ class ResultViewController: UIViewController {
         return tv
     }()
 
+    private let comparisonCard: UIView = {
+        let v = UIView()
+        v.backgroundColor = .secondarySystemBackground
+        v.layer.cornerRadius = 12
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    private let comparisonTitleLabel: UILabel = {
+        let l = UILabel()
+        l.text = "대본 대조"
+        l.font = .boldSystemFont(ofSize: 13)
+        l.textColor = .secondaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private let comparisonLegend: UILabel = {
+        let l = UILabel()
+        l.font = .systemFont(ofSize: 11)
+        l.textColor = .secondaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        let attr = NSMutableAttributedString()
+        attr.append(NSAttributedString(string: "● ", attributes: [.foregroundColor: UIColor.systemGreen]))
+        attr.append(NSAttributedString(string: "말한 단어  "))
+        attr.append(NSAttributedString(string: "● ", attributes: [.foregroundColor: UIColor.systemRed]))
+        attr.append(NSAttributedString(string: "빠진 단어"))
+        l.attributedText = attr
+        return l
+    }()
+
+    private let comparisonTextView: UITextView = {
+        let tv = UITextView()
+        tv.isEditable = false
+        tv.isScrollEnabled = false
+        tv.backgroundColor = .clear
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        return tv
+    }()
+
     private let backButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("발표로 돌아가기", for: .normal)
@@ -131,6 +171,7 @@ class ResultViewController: UIViewController {
         silenceScore = result.silenceScore
         fillerScore  = result.fillerScore
         sttTextView.text = result.sttText.isEmpty ? "(인식된 텍스트 없음)" : result.sttText
+        comparisonTextView.attributedText = buildComparisonAttributed(script: script, sttText: result.sttText)
         finishAnalysis()
     }
 
@@ -141,7 +182,38 @@ class ResultViewController: UIViewController {
         fillerScore  = Int.random(in: 10...20)
         totalScore   = scriptScore + speedScore + silenceScore + fillerScore
         sttTextView.text = "(STT 미연결 — 더미 점수)"
+        comparisonTextView.text = "(대본 대조를 위해 STT 연결이 필요해요)"
         finishAnalysis()
+    }
+
+    private func buildComparisonAttributed(script: String, sttText: String) -> NSAttributedString {
+        guard !script.isEmpty else {
+            return NSAttributedString(string: "(대본 없음)")
+        }
+
+        let sttTokens = Set(
+            sttText.components(separatedBy: .whitespacesAndNewlines)
+                .map { $0.trimmingCharacters(in: .punctuationCharacters) }
+                .filter { !$0.isEmpty }
+        )
+
+        let scriptWords = script.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+
+        let font = UIFont.systemFont(ofSize: 15)
+        let result = NSMutableAttributedString()
+
+        for (i, word) in scriptWords.enumerated() {
+            let clean = word.trimmingCharacters(in: .punctuationCharacters)
+            let matched = sttTokens.contains(clean)
+            let color: UIColor = matched ? .systemGreen : .systemRed
+            let attrs: [NSAttributedString.Key: Any] = [.foregroundColor: color, .font: font]
+            result.append(NSAttributedString(string: word, attributes: attrs))
+            if i < scriptWords.count - 1 {
+                result.append(NSAttributedString(string: " ", attributes: [.font: font]))
+            }
+        }
+        return result
     }
 
     private func finishAnalysis() {
@@ -204,6 +276,13 @@ class ResultViewController: UIViewController {
         sttCard.addSubview(sttLabel)
         sttCard.addSubview(sttTextView)
         contentView.addSubview(sttCard)
+
+        // 대본 대조 카드
+        comparisonCard.addSubview(comparisonTitleLabel)
+        comparisonCard.addSubview(comparisonLegend)
+        comparisonCard.addSubview(comparisonTextView)
+        contentView.addSubview(comparisonCard)
+
         contentView.addSubview(backButton)
 
         NSLayoutConstraint.activate([
@@ -219,6 +298,7 @@ class ResultViewController: UIViewController {
             barStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             barStack.topAnchor.constraint(equalTo: sectionLabel.bottomAnchor, constant: 16),
 
+            // STT 카드
             sttCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             sttCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             sttCard.topAnchor.constraint(equalTo: barStack.bottomAnchor, constant: 28),
@@ -232,9 +312,25 @@ class ResultViewController: UIViewController {
             sttTextView.topAnchor.constraint(equalTo: sttLabel.bottomAnchor, constant: 4),
             sttTextView.bottomAnchor.constraint(equalTo: sttCard.bottomAnchor, constant: -8),
 
+            // 대본 대조 카드
+            comparisonCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            comparisonCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            comparisonCard.topAnchor.constraint(equalTo: sttCard.bottomAnchor, constant: 16),
+
+            comparisonTitleLabel.leadingAnchor.constraint(equalTo: comparisonCard.leadingAnchor, constant: 12),
+            comparisonTitleLabel.topAnchor.constraint(equalTo: comparisonCard.topAnchor, constant: 12),
+
+            comparisonLegend.trailingAnchor.constraint(equalTo: comparisonCard.trailingAnchor, constant: -12),
+            comparisonLegend.centerYAnchor.constraint(equalTo: comparisonTitleLabel.centerYAnchor),
+
+            comparisonTextView.leadingAnchor.constraint(equalTo: comparisonCard.leadingAnchor, constant: 8),
+            comparisonTextView.trailingAnchor.constraint(equalTo: comparisonCard.trailingAnchor, constant: -8),
+            comparisonTextView.topAnchor.constraint(equalTo: comparisonTitleLabel.bottomAnchor, constant: 8),
+            comparisonTextView.bottomAnchor.constraint(equalTo: comparisonCard.bottomAnchor, constant: -8),
+
             backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             backButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
-            backButton.topAnchor.constraint(equalTo: sttCard.bottomAnchor, constant: 24),
+            backButton.topAnchor.constraint(equalTo: comparisonCard.bottomAnchor, constant: 24),
             backButton.heightAnchor.constraint(equalToConstant: 52),
             backButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
         ])
