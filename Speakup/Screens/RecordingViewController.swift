@@ -3,6 +3,7 @@ import UIKit
 class RecordingViewController: UIViewController {
 
     var script: String = ""
+    var workspaceId: String = ""
 
     // MARK: - Views
 
@@ -145,6 +146,7 @@ class RecordingViewController: UIViewController {
             guard let self = self else { return }
             let vc = ResultViewController()
             vc.script = self.script
+            vc.workspaceId = self.workspaceId
             vc.recordingDuration = self.elapsedSeconds
             self.navigationController?.pushViewController(vc, animated: true)
         }

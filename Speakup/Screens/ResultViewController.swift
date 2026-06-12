@@ -3,9 +3,9 @@ import UIKit
 class ResultViewController: UIViewController {
 
     var script: String = ""
+    var workspaceId: String = ""
     var recordingDuration: Int = 0
 
-    // 더미 점수 (추후 실제 분석으로 교체)
     private var totalScore: Int = 0
     private var scriptScore: Int = 0
     private var speedScore: Int = 0
@@ -28,21 +28,9 @@ class ResultViewController: UIViewController {
 
     private let scoreCircleView = CircleScoreView()
 
-    private let historyButton: UIButton = {
+    private let backButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("연습 기록 보기", for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 16)
-        button.setTitleColor(.systemBlue, for: .normal)
-        button.layer.borderColor = UIColor.systemBlue.cgColor
-        button.layer.borderWidth = 1.5
-        button.layer.cornerRadius = 14
-        button.translatesAutoresizingMaskIntoConstraints = false
-        return button
-    }()
-
-    private let homeButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("홈으로", for: .normal)
+        button.setTitle("발표로 돌아가기", for: .normal)
         button.titleLabel?.font = .boldSystemFont(ofSize: 16)
         button.backgroundColor = .systemBlue
         button.setTitleColor(.white, for: .normal)
@@ -61,9 +49,9 @@ class ResultViewController: UIViewController {
         view.backgroundColor = .systemBackground
         navigationItem.hidesBackButton = true
         computeDummyScores()
+        saveRecord()
         setupLayout()
-        historyButton.addTarget(self, action: #selector(historyButtonTapped), for: .touchUpInside)
-        homeButton.addTarget(self, action: #selector(homeButtonTapped), for: .touchUpInside)
+        backButton.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -72,7 +60,7 @@ class ResultViewController: UIViewController {
         scoreBarViews.forEach { $0.animateBar() }
     }
 
-    // MARK: - Score Computation (더미)
+    // MARK: - Score Computation (더미 — 추후 실제 분석으로 교체)
 
     private func computeDummyScores() {
         scriptScore = Int.random(in: 20...40)
@@ -80,6 +68,21 @@ class ResultViewController: UIViewController {
         silenceScore = Int.random(in: 10...20)
         fillerScore = Int.random(in: 10...20)
         totalScore = scriptScore + speedScore + silenceScore + fillerScore
+    }
+
+    private func saveRecord() {
+        guard !workspaceId.isEmpty else { return }
+        let record = PracticeRecord(
+            id: UUID().uuidString,
+            date: Date(),
+            totalScore: totalScore,
+            scriptScore: scriptScore,
+            speedScore: speedScore,
+            silenceScore: silenceScore,
+            fillerScore: fillerScore,
+            duration: recordingDuration
+        )
+        WorkspaceStore.shared.addRecord(record, toWorkspaceId: workspaceId)
     }
 
     // MARK: - Layout
@@ -101,11 +104,9 @@ class ResultViewController: UIViewController {
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
         ])
 
-        // 원형 점수
         scoreCircleView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(scoreCircleView)
 
-        // 항목별 점수 바
         let items: [(String, Int, Int)] = [
             ("대본 일치율", scriptScore, 40),
             ("말하기 속도", speedScore, 20),
@@ -130,12 +131,7 @@ class ResultViewController: UIViewController {
         sectionLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(sectionLabel)
 
-        let buttonStack = UIStackView(arrangedSubviews: [homeButton, historyButton])
-        buttonStack.axis = .horizontal
-        buttonStack.distribution = .fillEqually
-        buttonStack.spacing = 12
-        buttonStack.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(buttonStack)
+        contentView.addSubview(backButton)
 
         NSLayoutConstraint.activate([
             scoreCircleView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
@@ -150,22 +146,22 @@ class ResultViewController: UIViewController {
             barStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             barStack.topAnchor.constraint(equalTo: sectionLabel.bottomAnchor, constant: 16),
 
-            buttonStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
-            buttonStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
-            buttonStack.topAnchor.constraint(equalTo: barStack.bottomAnchor, constant: 36),
-            buttonStack.heightAnchor.constraint(equalToConstant: 52),
-            buttonStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
+            backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            backButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            backButton.topAnchor.constraint(equalTo: barStack.bottomAnchor, constant: 36),
+            backButton.heightAnchor.constraint(equalToConstant: 52),
+            backButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
         ])
     }
 
     // MARK: - Actions
 
-    @objc private func historyButtonTapped() {
-        navigationController?.pushViewController(HistoryViewController(), animated: true)
-    }
-
-    @objc private func homeButtonTapped() {
-        navigationController?.popToRootViewController(animated: true)
+    @objc private func backButtonTapped() {
+        if let vc = navigationController?.viewControllers.first(where: { $0 is WorkspaceDetailViewController }) {
+            navigationController?.popToViewController(vc, animated: true)
+        } else {
+            navigationController?.popToRootViewController(animated: true)
+        }
     }
 }
 
@@ -217,7 +213,8 @@ class CircleScoreView: UIView {
         let radius = bounds.width / 2 - 10
         let startAngle = -CGFloat.pi / 2
         let endAngle = startAngle + 2 * CGFloat.pi
-        let path = UIBezierPath(arcCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
+        let path = UIBezierPath(arcCenter: center, radius: radius,
+                                startAngle: startAngle, endAngle: endAngle, clockwise: true)
 
         trackLayer.path = path.cgPath
         trackLayer.fillColor = UIColor.clear.cgColor

@@ -1,8 +1,8 @@
 import UIKit
 
-// MARK: - Data Model
+// MARK: - Data Model (legacy placeholder — real data uses Models/Workspace.swift)
 
-struct PracticeRecord {
+private struct PracticeRecord {
     let date: String
     let totalScore: Int
     let scriptScore: Int

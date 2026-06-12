@@ -2,31 +2,21 @@ import UIKit
 
 class ScriptViewController: UIViewController {
 
-    // MARK: - Views
+    var workspaceId: String = ""
+    var initialScript: String = ""
 
-    private let instructionLabel: UILabel = {
-        let label = UILabel()
-        label.text = "발표할 대본을 입력하세요"
-        label.font = .systemFont(ofSize: 15)
-        label.textColor = .secondaryLabel
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
+    // MARK: - Views
 
     private let textView: UITextView = {
         let tv = UITextView()
         tv.font = .systemFont(ofSize: 16)
-        tv.layer.borderColor = UIColor.separator.cgColor
-        tv.layer.borderWidth = 1
-        tv.layer.cornerRadius = 10
-        tv.textContainerInset = UIEdgeInsets(top: 12, left: 10, bottom: 12, right: 10)
+        tv.textContainerInset = UIEdgeInsets(top: 16, left: 12, bottom: 16, right: 12)
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
 
     private let counterLabel: UILabel = {
         let label = UILabel()
-        label.text = "0 / 2000"
         label.font = .systemFont(ofSize: 13)
         label.textColor = .secondaryLabel
         label.textAlignment = .right
@@ -34,76 +24,66 @@ class ScriptViewController: UIViewController {
         return label
     }()
 
-    private let startButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("녹음 시작", for: .normal)
-        button.titleLabel?.font = .boldSystemFont(ofSize: 18)
-        button.backgroundColor = .systemBlue
-        button.setTitleColor(.white, for: .normal)
-        button.layer.cornerRadius = 14
-        button.translatesAutoresizingMaskIntoConstraints = false
-        return button
-    }()
-
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "대본 입력"
+        title = "대본 편집"
         view.backgroundColor = .systemBackground
-        setupLayout()
-        textView.delegate = self
-        startButton.addTarget(self, action: #selector(startButtonTapped), for: .touchUpInside)
 
-        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        view.addGestureRecognizer(tap)
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "저장", style: .done, target: self, action: #selector(saveTapped)
+        )
+
+        setupLayout()
+        textView.text = initialScript
+        textViewDidChange(textView)
+        textView.delegate = self
+
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)),
+                                               name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - Layout
 
     private func setupLayout() {
-        [instructionLabel, textView, counterLabel, startButton].forEach { view.addSubview($0) }
+        view.addSubview(textView)
+        view.addSubview(counterLabel)
 
         NSLayoutConstraint.activate([
-            instructionLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            instructionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            textView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
+            textView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            textView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 
-            textView.topAnchor.constraint(equalTo: instructionLabel.bottomAnchor, constant: 12),
-            textView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            textView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            textView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.45),
-
-            counterLabel.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 6),
-            counterLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-
-            startButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            startButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            startButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
-            startButton.heightAnchor.constraint(equalToConstant: 56),
+            counterLabel.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 8),
+            counterLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            counterLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            counterLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
         ])
+    }
+
+    // MARK: - Keyboard
+
+    @objc private func keyboardWillChange(_ notification: Notification) {
+        guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        let keyboardHeight = max(0, view.bounds.height - frame.origin.y)
+        textView.contentInset.bottom = keyboardHeight
+        textView.verticalScrollIndicatorInsets.bottom = keyboardHeight
     }
 
     // MARK: - Actions
 
-    @objc private func startButtonTapped() {
+    @objc private func saveTapped() {
         let script = textView.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !script.isEmpty else {
-            showAlert("대본을 입력해 주세요.")
-            return
+        if var workspace = WorkspaceStore.shared.workspaces.first(where: { $0.id == workspaceId }) {
+            workspace.script = script
+            WorkspaceStore.shared.update(workspace)
         }
-        let vc = RecordingViewController()
-        vc.script = script
-        navigationController?.pushViewController(vc, animated: true)
-    }
-
-    @objc private func dismissKeyboard() {
-        view.endEditing(true)
-    }
-
-    private func showAlert(_ message: String) {
-        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "확인", style: .default))
-        present(alert, animated: true)
+        navigationController?.popViewController(animated: true)
     }
 }
 
@@ -112,9 +92,8 @@ class ScriptViewController: UIViewController {
 extension ScriptViewController: UITextViewDelegate {
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
         let current = textView.text ?? ""
-        guard let range = Range(range, in: current) else { return true }
-        let updated = current.replacingCharacters(in: range, with: text)
-        return updated.count <= 2000
+        guard let r = Range(range, in: current) else { return true }
+        return current.replacingCharacters(in: r, with: text).count <= 2000
     }
 
     func textViewDidChange(_ textView: UITextView) {

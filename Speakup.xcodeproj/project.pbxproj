@@ -17,6 +17,10 @@
 		AA000003AA0000001A000002 /* RecordingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001A000002 /* RecordingViewController.swift */; };
 		AA000003AA0000001A000003 /* ResultViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001A000003 /* ResultViewController.swift */; };
 		AA000003AA0000001A000004 /* HistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001A000004 /* HistoryViewController.swift */; };
+		AA000003AA0000001B000001 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001B000001 /* Workspace.swift */; };
+		AA000003AA0000001B000002 /* WorkspaceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001B000002 /* WorkspaceStore.swift */; };
+		AA000003AA0000001B000003 /* WorkspaceDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001B000003 /* WorkspaceDetailViewController.swift */; };
+		AA000003AA0000001B000004 /* WorkspaceCreateViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001B000004 /* WorkspaceCreateViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +36,10 @@
 		AA000002AA0000001A000002 /* RecordingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingViewController.swift; sourceTree = "<group>"; };
 		AA000002AA0000001A000003 /* ResultViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultViewController.swift; sourceTree = "<group>"; };
 		AA000002AA0000001A000004 /* HistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewController.swift; sourceTree = "<group>"; };
+		AA000002AA0000001B000001 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
+		AA000002AA0000001B000002 /* WorkspaceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStore.swift; sourceTree = "<group>"; };
+		AA000002AA0000001B000003 /* WorkspaceDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceDetailViewController.swift; sourceTree = "<group>"; };
+		AA000002AA0000001B000004 /* WorkspaceCreateViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceCreateViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,8 +76,19 @@
 				AA000002AA0000001A000002 /* RecordingViewController.swift */,
 				AA000002AA0000001A000003 /* ResultViewController.swift */,
 				AA000002AA0000001A000004 /* HistoryViewController.swift */,
+				AA000002AA0000001B000003 /* WorkspaceDetailViewController.swift */,
+				AA000002AA0000001B000004 /* WorkspaceCreateViewController.swift */,
 			);
 			path = Screens;
+			sourceTree = "<group>";
+		};
+		AA000001AA0000001B000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA000002AA0000001B000001 /* Workspace.swift */,
+				AA000002AA0000001B000002 /* WorkspaceStore.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		1F96E1C02FD5FF3F00F97BDE /* Speakup */ = {
@@ -79,6 +98,7 @@
 				1F96E1C32FD5FF3F00F97BDE /* SceneDelegate.swift */,
 				1F96E1C52FD5FF3F00F97BDE /* HomeViewController.swift */,
 				AA000001AA0000001A000001 /* Screens */,
+				AA000001AA0000001B000001 /* Models */,
 				1F96E1C72FD5FF3F00F97BDE /* Main.storyboard */,
 				1F96E1CA2FD5FF4000F97BDE /* Assets.xcassets */,
 				1F96E1CC2FD5FF4000F97BDE /* LaunchScreen.storyboard */,
@@ -162,6 +182,10 @@
 				AA000003AA0000001A000002 /* RecordingViewController.swift in Sources */,
 				AA000003AA0000001A000003 /* ResultViewController.swift in Sources */,
 				AA000003AA0000001A000004 /* HistoryViewController.swift in Sources */,
+				AA000003AA0000001B000001 /* Workspace.swift in Sources */,
+				AA000003AA0000001B000002 /* WorkspaceStore.swift in Sources */,
+				AA000003AA0000001B000003 /* WorkspaceDetailViewController.swift in Sources */,
+				AA000003AA0000001B000004 /* WorkspaceCreateViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
