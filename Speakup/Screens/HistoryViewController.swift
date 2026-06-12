@@ -2,7 +2,7 @@ import UIKit
 
 // MARK: - Data Model (legacy placeholder — real data uses Models/Workspace.swift)
 
-private struct PracticeRecord {
+private struct LegacyRecord {
     let date: String
     let totalScore: Int
     let scriptScore: Int
@@ -15,12 +15,12 @@ private struct PracticeRecord {
 
 class HistoryViewController: UIViewController {
 
-    private let records: [PracticeRecord] = [
-        PracticeRecord(date: "2026.06.10", totalScore: 82, scriptScore: 34, speedScore: 18, silenceScore: 16, fillerScore: 14),
-        PracticeRecord(date: "2026.06.09", totalScore: 74, scriptScore: 28, speedScore: 16, silenceScore: 14, fillerScore: 16),
-        PracticeRecord(date: "2026.06.08", totalScore: 65, scriptScore: 24, speedScore: 14, silenceScore: 14, fillerScore: 13),
-        PracticeRecord(date: "2026.06.07", totalScore: 58, scriptScore: 22, speedScore: 12, silenceScore: 12, fillerScore: 12),
-        PracticeRecord(date: "2026.06.05", totalScore: 45, scriptScore: 18, speedScore: 10, silenceScore: 10, fillerScore: 7),
+    private let records: [LegacyRecord] = [
+        LegacyRecord(date: "2026.06.10", totalScore: 82, scriptScore: 34, speedScore: 18, silenceScore: 16, fillerScore: 14),
+        LegacyRecord(date: "2026.06.09", totalScore: 74, scriptScore: 28, speedScore: 16, silenceScore: 14, fillerScore: 16),
+        LegacyRecord(date: "2026.06.08", totalScore: 65, scriptScore: 24, speedScore: 14, silenceScore: 14, fillerScore: 13),
+        LegacyRecord(date: "2026.06.07", totalScore: 58, scriptScore: 22, speedScore: 12, silenceScore: 12, fillerScore: 12),
+        LegacyRecord(date: "2026.06.05", totalScore: 45, scriptScore: 18, speedScore: 10, silenceScore: 10, fillerScore: 7),
     ]
 
     private let graphView = LineGraphView()
@@ -142,7 +142,7 @@ private class HistoryCell: UITableViewCell {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    func configure(with record: PracticeRecord) {
+    func configure(with record: LegacyRecord) {
         dateLabel.text = record.date
         scoreLabel.text = "\(record.totalScore)"
         scoreLabel.textColor = record.totalScore >= 80 ? .systemGreen : record.totalScore >= 60 ? .systemOrange : .systemRed
