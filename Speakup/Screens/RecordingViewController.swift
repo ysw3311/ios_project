@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import UniformTypeIdentifiers
 
 class RecordingViewController: UIViewController {
 
@@ -62,6 +63,17 @@ class RecordingViewController: UIViewController {
         return label
     }()
 
+    private let fileButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("파일로 분석하기", for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 15)
+        btn.setTitleColor(.systemBlue, for: .normal)
+        btn.backgroundColor = .secondarySystemBackground
+        btn.layer.cornerRadius = 12
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        return btn
+    }()
+
     // MARK: - State
 
     private var elapsedSeconds = 0
@@ -77,6 +89,7 @@ class RecordingViewController: UIViewController {
         navigationItem.hidesBackButton = true
         setupLayout()
         stopButton.addTarget(self, action: #selector(stopButtonTapped), for: .touchUpInside)
+        fileButton.addTarget(self, action: #selector(fileButtonTapped), for: .touchUpInside)
         startRecording()
     }
 
@@ -89,7 +102,7 @@ class RecordingViewController: UIViewController {
 
     private func setupLayout() {
         waveformView.translatesAutoresizingMaskIntoConstraints = false
-        [timerLabel, statusLabel, waveformView, stopButton, hintLabel].forEach { view.addSubview($0) }
+        [timerLabel, statusLabel, waveformView, stopButton, hintLabel, fileButton].forEach { view.addSubview($0) }
 
         NSLayoutConstraint.activate([
             timerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -110,6 +123,11 @@ class RecordingViewController: UIViewController {
 
             hintLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             hintLabel.topAnchor.constraint(equalTo: stopButton.bottomAnchor, constant: 16),
+
+            fileButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
+            fileButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
+            fileButton.heightAnchor.constraint(equalToConstant: 48),
+            fileButton.topAnchor.constraint(equalTo: hintLabel.bottomAnchor, constant: 24),
         ])
     }
 
@@ -160,14 +178,67 @@ class RecordingViewController: UIViewController {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self = self else { return }
-            let vc = ResultViewController()
-            vc.script = self.script
-            vc.workspaceId = self.workspaceId
-            vc.recordingDuration = self.elapsedSeconds
-            vc.audioFileURL = audioURL
-            vc.audioLevels = self.audioLevels
-            self.navigationController?.pushViewController(vc, animated: true)
+            self.pushResult(audioURL: audioURL, duration: self.elapsedSeconds)
         }
+    }
+
+    @objc private func fileButtonTapped() {
+        timer?.invalidate()
+        RecordingService.shared.stopRecording()
+        stopButton.isEnabled = false
+
+        let types: [UTType] = [.audio, .mpeg4Audio, .mp3]
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types)
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+        present(picker, animated: true)
+    }
+
+    private func pushResult(audioURL: URL, duration: Int) {
+        let vc = ResultViewController()
+        vc.script = self.script
+        vc.workspaceId = self.workspaceId
+        vc.recordingDuration = duration
+        vc.audioFileURL = audioURL
+        vc.audioLevels = self.audioLevels
+        navigationController?.pushViewController(vc, animated: true)
+    }
+}
+
+// MARK: - UIDocumentPickerDelegate
+
+extension RecordingViewController: UIDocumentPickerDelegate {
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let srcURL = urls.first else { return }
+
+        let accessing = srcURL.startAccessingSecurityScopedResource()
+        defer { if accessing { srcURL.stopAccessingSecurityScopedResource() } }
+
+        // 임시 디렉토리에 복사해서 샌드박스 밖 파일도 안정적으로 접근
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(srcURL.lastPathComponent)
+        try? FileManager.default.removeItem(at: tempURL)
+        do {
+            try FileManager.default.copyItem(at: srcURL, to: tempURL)
+        } catch {
+            showAlert("파일을 읽을 수 없어요: \(error.localizedDescription)")
+            return
+        }
+
+        // 오디오 길이 가져오기
+        let asset = AVURLAsset(url: tempURL)
+        let duration = Int(CMTimeGetSeconds(asset.duration))
+
+        statusLabel.text = "파일 분석 중..."
+        statusLabel.textColor = .secondaryLabel
+        pushResult(audioURL: tempURL, duration: max(duration, 1))
+    }
+
+    private func showAlert(_ message: String) {
+        let alert = UIAlertController(title: "오류", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "확인", style: .default))
+        present(alert, animated: true)
     }
 }
 
