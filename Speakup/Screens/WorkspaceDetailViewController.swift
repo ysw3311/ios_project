@@ -30,19 +30,23 @@ class WorkspaceDetailViewController: UIViewController {
         let btn = UIButton(type: .system)
         btn.setTitle("연습 시작", for: .normal)
         btn.titleLabel?.font = .boldSystemFont(ofSize: 17)
-        btn.backgroundColor = .systemBlue
-        btn.setTitleColor(.white, for: .normal)
         btn.layer.cornerRadius = 16
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
     }()
 
-    // Dynamic refs for refresh
-    private var scriptPreviewLabel: UILabel?
-    private var emptyScriptLabel: UILabel?
-    private var statsStack: UIStackView?
-    private var graphView: LineGraphView?
-    private var recordsStack: UIStackView?
+    // Stored card refs for safe show/hide
+    private var scriptCard: UIView!
+    private var statsBar: UIStackView!
+    private var graphCard: UIView!
+    private var recordsHeaderLabel: UILabel!
+    private var recordsCard: UIView!
+
+    // Dynamic content refs
+    private var scriptPreviewLabel: UILabel!
+    private var emptyScriptView: UIView!
+    private var graphView: LineGraphView!
+    private var recordsStack: UIStackView!
 
     // MARK: - Lifecycle
 
@@ -50,14 +54,8 @@ class WorkspaceDetailViewController: UIViewController {
         super.viewDidLoad()
         title = workspace.name
         view.backgroundColor = .systemGroupedBackground
-
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "대본 편집", style: .plain, target: self, action: #selector(editScript)
-        )
-
         setupScrollView()
         buildContent()
-
         startButton.addTarget(self, action: #selector(startPractice), for: .touchUpInside)
     }
 
@@ -97,147 +95,246 @@ class WorkspaceDetailViewController: UIViewController {
     }
 
     private func buildContent() {
-        // --- Script card ---
-        let scriptCard = makeCard()
+        buildScriptCard()
+        buildStatsBar()
+        buildGraphCard()
+        buildRecordsSection()
+        refreshContent()
+    }
 
-        let scriptHeaderRow = makeRow()
-        let scriptTitle = makeSection("대본")
-        scriptHeaderRow.addArrangedSubview(scriptTitle)
+    // MARK: - Script Card
 
-        let scriptPreview = UILabel()
-        scriptPreview.font = .systemFont(ofSize: 14)
-        scriptPreview.numberOfLines = 4
-        scriptPreview.textColor = .label
-        scriptPreview.translatesAutoresizingMaskIntoConstraints = false
-        self.scriptPreviewLabel = scriptPreview
+    private func buildScriptCard() {
+        let card = makeCard()
+        self.scriptCard = card
 
-        let emptyScript = UILabel()
-        emptyScript.text = "아직 대본이 없어요.\n우측 상단 '대본 편집'을 눌러 추가해보세요."
-        emptyScript.font = .systemFont(ofSize: 14)
-        emptyScript.textColor = .secondaryLabel
-        emptyScript.numberOfLines = 0
-        emptyScript.translatesAutoresizingMaskIntoConstraints = false
-        self.emptyScriptLabel = emptyScript
+        // Header: "대본" 타이틀 + "편집 >" 버튼
+        let titleLabel = UILabel()
+        titleLabel.text = "대본"
+        titleLabel.font = .boldSystemFont(ofSize: 15)
 
-        let scriptInner = UIStackView(arrangedSubviews: [scriptHeaderRow, scriptPreview, emptyScript])
-        scriptInner.axis = .vertical
-        scriptInner.spacing = 8
-        scriptInner.translatesAutoresizingMaskIntoConstraints = false
-        scriptCard.addSubview(scriptInner)
+        let editButton = UIButton(type: .system)
+        editButton.setTitle("편집", for: .normal)
+        editButton.titleLabel?.font = .systemFont(ofSize: 14)
+        editButton.setTitleColor(.systemBlue, for: .normal)
+        editButton.addTarget(self, action: #selector(editScript), for: .touchUpInside)
+
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.right"))
+        chevron.tintColor = .systemBlue
+        chevron.contentMode = .scaleAspectFit
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        chevron.widthAnchor.constraint(equalToConstant: 9).isActive = true
+
+        let editRow = UIStackView(arrangedSubviews: [editButton, chevron])
+        editRow.axis = .horizontal
+        editRow.spacing = 2
+        editRow.alignment = .center
+
+        let headerRow = UIStackView(arrangedSubviews: [titleLabel, UIView(), editRow])
+        headerRow.axis = .horizontal
+        headerRow.alignment = .center
+
+        // 대본 미리보기 (있을 때)
+        let preview = UILabel()
+        preview.font = .systemFont(ofSize: 14)
+        preview.textColor = .secondaryLabel
+        preview.numberOfLines = 3
+        self.scriptPreviewLabel = preview
+
+        // 빈 상태 (없을 때) — 탭 유도
+        let emptyView = buildEmptyScriptView()
+        self.emptyScriptView = emptyView
+
+        let inner = UIStackView(arrangedSubviews: [headerRow, preview, emptyView])
+        inner.axis = .vertical
+        inner.spacing = 10
+        inner.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(inner)
+
         NSLayoutConstraint.activate([
-            scriptInner.topAnchor.constraint(equalTo: scriptCard.topAnchor, constant: 14),
-            scriptInner.leadingAnchor.constraint(equalTo: scriptCard.leadingAnchor, constant: 16),
-            scriptInner.trailingAnchor.constraint(equalTo: scriptCard.trailingAnchor, constant: -16),
-            scriptInner.bottomAnchor.constraint(equalTo: scriptCard.bottomAnchor, constant: -14),
+            inner.topAnchor.constraint(equalTo: card.topAnchor, constant: 14),
+            inner.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            inner.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            inner.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14),
         ])
-        contentStack.addArrangedSubview(scriptCard)
 
-        // --- Stats bar ---
-        let statsBar = UIStackView()
-        statsBar.axis = .horizontal
-        statsBar.distribution = .fillEqually
-        statsBar.spacing = 8
-        statsBar.translatesAutoresizingMaskIntoConstraints = false
-        self.statsStack = statsBar
-        contentStack.addArrangedSubview(statsBar)
-        statsBar.heightAnchor.constraint(equalToConstant: 72).isActive = true
+        // 카드 전체 탭 → 편집
+        let tap = UITapGestureRecognizer(target: self, action: #selector(editScript))
+        card.addGestureRecognizer(tap)
+        card.isUserInteractionEnabled = true
 
-        // --- Graph card ---
-        let graphCard = makeCard()
+        contentStack.addArrangedSubview(card)
+    }
 
-        let graphTitle = makeSection("점수 추이")
-        graphTitle.translatesAutoresizingMaskIntoConstraints = false
+    private func buildEmptyScriptView() -> UIView {
+        let container = UIView()
+        container.backgroundColor = .systemBlue.withAlphaComponent(0.06)
+        container.layer.cornerRadius = 8
+        container.layer.borderColor = UIColor.systemBlue.withAlphaComponent(0.2).cgColor
+        container.layer.borderWidth = 1
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let icon = UIImageView(image: UIImage(systemName: "square.and.pencil"))
+        icon.tintColor = .systemBlue
+        icon.contentMode = .scaleAspectFit
+        icon.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = UILabel()
+        label.text = "탭해서 대본을 추가해보세요"
+        label.font = .systemFont(ofSize: 14)
+        label.textColor = .systemBlue
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        let row = UIStackView(arrangedSubviews: [icon, label])
+        row.axis = .horizontal
+        row.spacing = 8
+        row.alignment = .center
+        row.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(row)
+
+        NSLayoutConstraint.activate([
+            icon.widthAnchor.constraint(equalToConstant: 18),
+            icon.heightAnchor.constraint(equalToConstant: 18),
+            row.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            row.topAnchor.constraint(equalTo: container.topAnchor, constant: 14),
+            row.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14),
+        ])
+        return container
+    }
+
+    // MARK: - Stats Bar
+
+    private func buildStatsBar() {
+        let bar = UIStackView()
+        bar.axis = .horizontal
+        bar.distribution = .fillEqually
+        bar.spacing = 8
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        bar.heightAnchor.constraint(equalToConstant: 72).isActive = true
+        self.statsBar = bar
+        contentStack.addArrangedSubview(bar)
+    }
+
+    // MARK: - Graph Card
+
+    private func buildGraphCard() {
+        let card = makeCard()
+        self.graphCard = card
+
+        let titleLabel = UILabel()
+        titleLabel.text = "점수 추이"
+        titleLabel.font = .boldSystemFont(ofSize: 15)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         let graph = LineGraphView()
         graph.translatesAutoresizingMaskIntoConstraints = false
         self.graphView = graph
 
-        let graphInner = UIStackView(arrangedSubviews: [graphTitle, graph])
-        graphInner.axis = .vertical
-        graphInner.spacing = 10
-        graphInner.translatesAutoresizingMaskIntoConstraints = false
-        graphCard.addSubview(graphInner)
+        let inner = UIStackView(arrangedSubviews: [titleLabel, graph])
+        inner.axis = .vertical
+        inner.spacing = 10
+        inner.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(inner)
+
         NSLayoutConstraint.activate([
-            graphInner.topAnchor.constraint(equalTo: graphCard.topAnchor, constant: 14),
-            graphInner.leadingAnchor.constraint(equalTo: graphCard.leadingAnchor, constant: 16),
-            graphInner.trailingAnchor.constraint(equalTo: graphCard.trailingAnchor, constant: -16),
-            graphInner.bottomAnchor.constraint(equalTo: graphCard.bottomAnchor, constant: -14),
+            inner.topAnchor.constraint(equalTo: card.topAnchor, constant: 14),
+            inner.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            inner.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            inner.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14),
             graph.heightAnchor.constraint(equalToConstant: 130),
         ])
-        contentStack.addArrangedSubview(graphCard)
-
-        // --- Records ---
-        let recordsHeader = makeRow()
-        recordsHeader.addArrangedSubview(makeSection("연습 기록"))
-
-        let records = UIStackView()
-        records.axis = .vertical
-        records.spacing = 0
-        records.translatesAutoresizingMaskIntoConstraints = false
-        self.recordsStack = records
-
-        let recordsCard = makeCard()
-        recordsCard.addSubview(records)
-        NSLayoutConstraint.activate([
-            records.topAnchor.constraint(equalTo: recordsCard.topAnchor),
-            records.leadingAnchor.constraint(equalTo: recordsCard.leadingAnchor),
-            records.trailingAnchor.constraint(equalTo: recordsCard.trailingAnchor),
-            records.bottomAnchor.constraint(equalTo: recordsCard.bottomAnchor),
-        ])
-
-        contentStack.addArrangedSubview(recordsHeader)
-        contentStack.addArrangedSubview(recordsCard)
-
-        refreshContent()
+        contentStack.addArrangedSubview(card)
     }
 
+    // MARK: - Records Section
+
+    private func buildRecordsSection() {
+        let header = UILabel()
+        header.text = "연습 기록"
+        header.font = .boldSystemFont(ofSize: 15)
+        header.translatesAutoresizingMaskIntoConstraints = false
+        self.recordsHeaderLabel = header
+        contentStack.addArrangedSubview(header)
+
+        let card = makeCard()
+        self.recordsCard = card
+
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 0
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        self.recordsStack = stack
+        card.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: card.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+        ])
+        contentStack.addArrangedSubview(card)
+    }
+
+    // MARK: - Refresh
+
     private func refreshContent() {
-        // Script
+        refreshScriptCard()
+        refreshStats()
+        refreshGraph()
+        refreshRecords()
+        refreshStartButton()
+    }
+
+    private func refreshScriptCard() {
         let hasScript = !workspace.script.isEmpty
-        scriptPreviewLabel?.text = workspace.script
-        scriptPreviewLabel?.isHidden = !hasScript
-        emptyScriptLabel?.isHidden = hasScript
+        scriptPreviewLabel.text = workspace.script
+        scriptPreviewLabel.isHidden = !hasScript
+        emptyScriptView.isHidden = hasScript
+    }
 
-        // Stats
-        statsStack?.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        let statItems: [(String, String)] = [
+    private func refreshStats() {
+        statsBar.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let hasRecords = !workspace.records.isEmpty
+        statsBar.isHidden = !hasRecords
+        guard hasRecords else { return }
+
+        let items: [(String, String)] = [
             ("총 연습", "\(workspace.practiceCount)회"),
-            ("최고 점수", workspace.bestScore > 0 ? "\(workspace.bestScore)점" : "--"),
-            ("평균 점수", workspace.averageScore > 0 ? "\(workspace.averageScore)점" : "--"),
+            ("최고 점수", "\(workspace.bestScore)점"),
+            ("평균 점수", "\(workspace.averageScore)점"),
         ]
-        statItems.forEach { title, value in
-            statsStack?.addArrangedSubview(StatBadgeView(title: title, value: value))
-        }
+        items.forEach { statsBar.addArrangedSubview(StatBadgeView(title: $0.0, value: $0.1)) }
+    }
 
-        // Graph
+    private func refreshGraph() {
         let scores = workspace.records.reversed().map { $0.totalScore }
-        graphView?.setScores(scores)
-        graphView?.superview?.superview?.isHidden = scores.count < 2
+        graphView.setScores(scores)
+        graphCard.isHidden = scores.count < 2
+    }
 
-        // Records
-        recordsStack?.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        if workspace.records.isEmpty {
-            let empty = UILabel()
-            empty.text = "아직 연습 기록이 없어요"
-            empty.font = .systemFont(ofSize: 14)
-            empty.textColor = .secondaryLabel
-            empty.textAlignment = .center
-            empty.translatesAutoresizingMaskIntoConstraints = false
-            recordsStack?.addArrangedSubview(empty)
-            empty.heightAnchor.constraint(equalToConstant: 56).isActive = true
-        } else {
-            for (i, record) in workspace.records.enumerated() {
-                let row = RecordRowView(record: record)
-                recordsStack?.addArrangedSubview(row)
-                if i < workspace.records.count - 1 {
-                    let sep = UIView()
-                    sep.backgroundColor = .separator
-                    sep.translatesAutoresizingMaskIntoConstraints = false
-                    recordsStack?.addArrangedSubview(sep)
-                    sep.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
-                }
+    private func refreshRecords() {
+        recordsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let hasRecords = !workspace.records.isEmpty
+        recordsHeaderLabel.isHidden = !hasRecords
+        recordsCard.isHidden = !hasRecords
+        guard hasRecords else { return }
+
+        for (i, record) in workspace.records.enumerated() {
+            recordsStack.addArrangedSubview(RecordRowView(record: record))
+            if i < workspace.records.count - 1 {
+                let sep = UIView()
+                sep.backgroundColor = .separator
+                sep.translatesAutoresizingMaskIntoConstraints = false
+                recordsStack.addArrangedSubview(sep)
+                sep.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
             }
         }
+    }
+
+    private func refreshStartButton() {
+        let hasScript = !workspace.script.isEmpty
+        startButton.backgroundColor = hasScript ? .systemBlue : .systemGray4
+        startButton.setTitleColor(hasScript ? .white : .systemGray2, for: .normal)
     }
 
     // MARK: - Helpers
@@ -248,22 +345,6 @@ class WorkspaceDetailViewController: UIViewController {
         v.layer.cornerRadius = 12
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
-    }
-
-    private func makeRow() -> UIStackView {
-        let sv = UIStackView()
-        sv.axis = .horizontal
-        sv.alignment = .center
-        sv.translatesAutoresizingMaskIntoConstraints = false
-        return sv
-    }
-
-    private func makeSection(_ text: String) -> UILabel {
-        let label = UILabel()
-        label.text = text
-        label.font = .boldSystemFont(ofSize: 15)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
     }
 
     // MARK: - Actions
@@ -277,8 +358,12 @@ class WorkspaceDetailViewController: UIViewController {
 
     @objc private func startPractice() {
         guard !workspace.script.isEmpty else {
-            let alert = UIAlertController(title: "대본이 없어요", message: "먼저 대본을 입력해야 연습할 수 있어요.", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "대본 입력하기", style: .default) { [weak self] _ in self?.editScript() })
+            let alert = UIAlertController(title: "대본이 없어요",
+                                          message: "먼저 대본을 입력해야 연습할 수 있어요.",
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "대본 입력하기", style: .default) { [weak self] _ in
+                self?.editScript()
+            })
             alert.addAction(UIAlertAction(title: "취소", style: .cancel))
             present(alert, animated: true)
             return
@@ -338,11 +423,11 @@ private class RecordRowView: UIView {
     required init?(coder: NSCoder) { fatalError() }
 
     private func setupViews(record: PracticeRecord) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy.MM.dd  HH:mm"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd  HH:mm"
 
         let dateLabel = UILabel()
-        dateLabel.text = dateFormatter.string(from: record.date)
+        dateLabel.text = formatter.string(from: record.date)
         dateLabel.font = .systemFont(ofSize: 13)
         dateLabel.textColor = .secondaryLabel
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
