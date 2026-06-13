@@ -16,8 +16,9 @@ final class ClovaSTTService {
     }
 
     func transcribe(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        // 단문 인식 API (60초 이하) — invoke URL 방식은 배치용이라 사용 안 함
-        let urlString = "https://clovaspeech-gw.ncloud.com/recog/v1/stt?lang=Kor"
+        let urlString = invokeURLString.isEmpty
+            ? "https://clovaspeech-gw.ncloud.com/recog/v1/stt?lang=Kor"
+            : invokeURLString
 
         print("🌐 STT URL:", urlString)
         print("🔑 API Key:", apiKey.isEmpty ? "(없음)" : apiKey.prefix(8).description + "...")
@@ -39,7 +40,10 @@ final class ClovaSTTService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-        request.setValue(apiKey, forHTTPHeaderField: "X-CLOVASPEECH-API-KEY")
+        // invoke URL은 URL 자체에 인증 포함, 기본 API는 헤더 필요
+        if invokeURLString.isEmpty {
+            request.setValue(apiKey, forHTTPHeaderField: "X-CLOVASPEECH-API-KEY")
+        }
         request.httpBody = audioData
 
         URLSession.shared.dataTask(with: request) { data, response, error in
