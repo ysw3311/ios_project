@@ -137,7 +137,7 @@ class ResultViewController: UIViewController {
         sv.isHidden = true
         sv.translatesAutoresizingMaskIntoConstraints = false
         return sv
-    }
+    }()
 
     // 로딩 오버레이
     private let loadingView: UIView = {

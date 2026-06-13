@@ -3,7 +3,7 @@ import UIKit
 class HistoryViewController: UIViewController {
 
     // 모든 워크스페이스의 기록을 날짜순으로 합산
-    private struct FlatRecord {
+    struct FlatRecord {
         let workspaceName: String
         let date: Date
         let totalScore: Int
