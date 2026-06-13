@@ -5,16 +5,20 @@ final class ClovaSTTService {
     static let shared = ClovaSTTService()
     private init() {}
 
-    private var apiKey: String {
-        guard let path = Bundle.main.path(forResource: "Config", ofType: "plist"),
-              let dict = NSDictionary(contentsOfFile: path),
-              let key = dict["ClovaAPIKey"] as? String else { return "" }
-        return key
+    private var config: NSDictionary? {
+        guard let path = Bundle.main.path(forResource: "Config", ofType: "plist") else { return nil }
+        return NSDictionary(contentsOfFile: path)
     }
+
+    private var apiKey: String { config?["ClovaAPIKey"] as? String ?? "" }
+    private var invokeURLString: String { config?["ClovaInvokeURL"] as? String ?? "" }
 
     /// 오디오 파일을 CLOVA Speech API로 전송해 인식된 텍스트를 반환.
     func transcribe(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: "https://clovaspeech-gw.ncloud.com/recog/v1/stt?lang=Kor") else {
+        let urlString = invokeURLString.isEmpty
+            ? "https://clovaspeech-gw.ncloud.com/recog/v1/stt?lang=Kor"
+            : invokeURLString + "?lang=Kor"
+        guard let url = URL(string: urlString) else {
             completion(.failure(STTError.invalidURL))
             return
         }
