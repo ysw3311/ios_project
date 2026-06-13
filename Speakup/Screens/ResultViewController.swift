@@ -159,6 +159,13 @@ class ResultViewController: UIViewController {
                 )
                 self.applyAnalysis(analysis)
             case .failure(let error):
+                let alert = UIAlertController(
+                    title: "STT 분석 실패",
+                    message: "음성 인식에 실패했습니다.\n\(error.localizedDescription)\n\n더미 점수로 결과를 표시합니다.",
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: "확인", style: .default))
+                self.present(alert, animated: true)
                 self.applyDummyScores(errorMessage: error.localizedDescription)
             }
         }

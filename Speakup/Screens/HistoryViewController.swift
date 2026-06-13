@@ -1,34 +1,37 @@
 import UIKit
 
-// MARK: - Data Model (legacy placeholder — real data uses Models/Workspace.swift)
-
-private struct LegacyRecord {
-    let date: String
-    let totalScore: Int
-    let scriptScore: Int
-    let speedScore: Int
-    let silenceScore: Int
-    let fillerScore: Int
-}
-
-// MARK: - HistoryViewController
-
 class HistoryViewController: UIViewController {
 
-    private let records: [LegacyRecord] = [
-        LegacyRecord(date: "2026.06.10", totalScore: 82, scriptScore: 34, speedScore: 18, silenceScore: 16, fillerScore: 14),
-        LegacyRecord(date: "2026.06.09", totalScore: 74, scriptScore: 28, speedScore: 16, silenceScore: 14, fillerScore: 16),
-        LegacyRecord(date: "2026.06.08", totalScore: 65, scriptScore: 24, speedScore: 14, silenceScore: 14, fillerScore: 13),
-        LegacyRecord(date: "2026.06.07", totalScore: 58, scriptScore: 22, speedScore: 12, silenceScore: 12, fillerScore: 12),
-        LegacyRecord(date: "2026.06.05", totalScore: 45, scriptScore: 18, speedScore: 10, silenceScore: 10, fillerScore: 7),
-    ]
+    // 모든 워크스페이스의 기록을 날짜순으로 합산
+    private struct FlatRecord {
+        let workspaceName: String
+        let date: Date
+        let totalScore: Int
+        let scriptScore: Int
+        let speedScore: Int
+        let silenceScore: Int
+        let fillerScore: Int
+    }
 
+    private var records: [FlatRecord] = []
     private let graphView = LineGraphView()
 
     private let tableView: UITableView = {
         let tv = UITableView(frame: .zero, style: .insetGrouped)
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
+    }()
+
+    private let emptyLabel: UILabel = {
+        let l = UILabel()
+        l.text = "아직 연습 기록이 없어요\n발표를 연습하면 여기에 기록됩니다"
+        l.font = .systemFont(ofSize: 15)
+        l.textColor = .secondaryLabel
+        l.textAlignment = .center
+        l.numberOfLines = 2
+        l.translatesAutoresizingMaskIntoConstraints = false
+        l.isHidden = true
+        return l
     }()
 
     // MARK: - Lifecycle
@@ -38,10 +41,40 @@ class HistoryViewController: UIViewController {
         title = "연습 기록"
         view.backgroundColor = .systemGroupedBackground
         setupLayout()
-        graphView.setScores(records.reversed().map { $0.totalScore })
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(HistoryCell.self, forCellReuseIdentifier: "HistoryCell")
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadRecords()
+    }
+
+    // MARK: - Data
+
+    private func loadRecords() {
+        records = WorkspaceStore.shared.workspaces
+            .flatMap { ws in
+                ws.records.map { r in
+                    FlatRecord(
+                        workspaceName: ws.name,
+                        date: r.date,
+                        totalScore: r.totalScore,
+                        scriptScore: r.scriptScore,
+                        speedScore: r.speedScore,
+                        silenceScore: r.silenceScore,
+                        fillerScore: r.fillerScore
+                    )
+                }
+            }
+            .sorted { $0.date > $1.date }
+
+        let scores = records.prefix(20).reversed().map { $0.totalScore }
+        graphView.setScores(Array(scores))
+        emptyLabel.isHidden = !records.isEmpty
+        graphView.isHidden = records.count < 2
+        tableView.reloadData()
     }
 
     // MARK: - Layout
@@ -50,6 +83,7 @@ class HistoryViewController: UIViewController {
         graphView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(graphView)
         view.addSubview(tableView)
+        view.addSubview(emptyLabel)
 
         NSLayoutConstraint.activate([
             graphView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
@@ -61,6 +95,9 @@ class HistoryViewController: UIViewController {
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
         ])
     }
 }
@@ -81,7 +118,9 @@ extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { 72 }
 
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? { "날짜별 연습 기록" }
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        records.isEmpty ? nil : "날짜별 연습 기록 (\(records.count)회)"
+    }
 }
 
 // MARK: - HistoryCell
@@ -89,48 +128,59 @@ extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
 private class HistoryCell: UITableViewCell {
 
     private let dateLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14)
-        label.textColor = .secondaryLabel
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+        let l = UILabel()
+        l.font = .systemFont(ofSize: 13)
+        l.textColor = .secondaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private let workspaceLabel: UILabel = {
+        let l = UILabel()
+        l.font = .systemFont(ofSize: 12)
+        l.textColor = .tertiaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
     }()
 
     private let scoreLabel: UILabel = {
-        let label = UILabel()
-        label.font = .boldSystemFont(ofSize: 28)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+        let l = UILabel()
+        l.font = .boldSystemFont(ofSize: 28)
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
     }()
 
     private let pointLabel: UILabel = {
-        let label = UILabel()
-        label.text = "점"
-        label.font = .systemFont(ofSize: 13)
-        label.textColor = .secondaryLabel
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+        let l = UILabel()
+        l.text = "점"
+        l.font = .systemFont(ofSize: 13)
+        l.textColor = .secondaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
     }()
 
     private let detailLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 12)
-        label.textColor = .tertiaryLabel
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+        let l = UILabel()
+        l.font = .systemFont(ofSize: 12)
+        l.textColor = .tertiaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
     }()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
-        [dateLabel, scoreLabel, pointLabel, detailLabel].forEach { contentView.addSubview($0) }
+        [dateLabel, workspaceLabel, scoreLabel, pointLabel, detailLabel].forEach { contentView.addSubview($0) }
 
         NSLayoutConstraint.activate([
             dateLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            dateLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            dateLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+
+            workspaceLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            workspaceLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 2),
 
             detailLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            detailLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 4),
+            detailLabel.topAnchor.constraint(equalTo: workspaceLabel.bottomAnchor, constant: 2),
 
             scoreLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -36),
             scoreLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
@@ -142,8 +192,11 @@ private class HistoryCell: UITableViewCell {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    func configure(with record: LegacyRecord) {
-        dateLabel.text = record.date
+    func configure(with record: HistoryViewController.FlatRecord) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd HH:mm"
+        dateLabel.text = formatter.string(from: record.date)
+        workspaceLabel.text = record.workspaceName
         scoreLabel.text = "\(record.totalScore)"
         scoreLabel.textColor = record.totalScore >= 80 ? .systemGreen : record.totalScore >= 60 ? .systemOrange : .systemRed
         detailLabel.text = "대본 \(record.scriptScore) · 속도 \(record.speedScore) · 침묵 \(record.silenceScore) · 필러 \(record.fillerScore)"
@@ -192,8 +245,7 @@ class LineGraphView: UIView {
         for (i, score) in scores.enumerated() {
             let x = padding + CGFloat(i) * step
             let y = padding + h * (1 - CGFloat(score) / 100.0)
-            let point = CGPoint(x: x, y: y)
-            if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+            if i == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
         }
         UIColor.systemBlue.setStroke()
         path.lineWidth = 2
@@ -203,10 +255,8 @@ class LineGraphView: UIView {
         for (i, score) in scores.enumerated() {
             let x = padding + CGFloat(i) * step
             let y = padding + h * (1 - CGFloat(score) / 100.0)
-            let dotRect = CGRect(x: x - 4, y: y - 4, width: 8, height: 8)
             UIColor.systemBlue.setFill()
-            UIBezierPath(ovalIn: dotRect).fill()
-
+            UIBezierPath(ovalIn: CGRect(x: x - 4, y: y - 4, width: 8, height: 8)).fill()
             let attrs: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 10),
                 .foregroundColor: UIColor.secondaryLabel,
