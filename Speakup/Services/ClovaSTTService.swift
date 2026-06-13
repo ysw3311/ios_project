@@ -16,9 +16,10 @@ final class ClovaSTTService {
     }
 
     func transcribe(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
+        // invoke URL 방식(장문 인식)은 도메인에 언어가 설정되어 있으므로 lang 파라미터 불필요
         let urlString = invokeURLString.isEmpty
             ? "https://clovaspeech-gw.ncloud.com/recog/v1/stt?lang=Kor"
-            : invokeURLString + "?lang=Kor"
+            : invokeURLString
 
         print("🌐 STT URL:", urlString)
         print("🔑 API Key:", apiKey.isEmpty ? "(없음)" : apiKey.prefix(8).description + "...")
