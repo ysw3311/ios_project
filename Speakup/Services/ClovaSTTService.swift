@@ -40,7 +40,10 @@ final class ClovaSTTService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-        request.setValue(apiKey, forHTTPHeaderField: "X-CLOVASPEECH-API-KEY")
+        // invoke URL 방식은 URL 자체에 인증 포함 → API Key 헤더 불필요
+        if invokeURLString.isEmpty {
+            request.setValue(apiKey, forHTTPHeaderField: "X-CLOVASPEECH-API-KEY")
+        }
         request.httpBody = audioData
 
         URLSession.shared.dataTask(with: request) { data, response, error in
