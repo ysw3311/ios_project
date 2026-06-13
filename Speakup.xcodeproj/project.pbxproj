@@ -24,6 +24,7 @@
 		AA000003AA0000001C000001 /* RecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000001 /* RecordingService.swift */; };
 		AA000003AA0000001C000002 /* ClovaSTTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000002 /* ClovaSTTService.swift */; };
 		AA000003AA0000001C000003 /* SpeechAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000003 /* SpeechAnalyzer.swift */; };
+		AA000003AA0000001C000005 /* GeminiFeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000005 /* GeminiFeedbackService.swift */; };
 		AA000004AA0000001C000004 /* Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA000002AA0000001C000004 /* Config.plist */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,7 @@
 		AA000002AA0000001C000001 /* RecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingService.swift; sourceTree = "<group>"; };
 		AA000002AA0000001C000002 /* ClovaSTTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClovaSTTService.swift; sourceTree = "<group>"; };
 		AA000002AA0000001C000003 /* SpeechAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechAnalyzer.swift; sourceTree = "<group>"; };
+		AA000002AA0000001C000005 /* GeminiFeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiFeedbackService.swift; sourceTree = "<group>"; };
 		AA000002AA0000001C000004 /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Config.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -105,6 +107,7 @@
 				AA000002AA0000001C000001 /* RecordingService.swift */,
 				AA000002AA0000001C000002 /* ClovaSTTService.swift */,
 				AA000002AA0000001C000003 /* SpeechAnalyzer.swift */,
+				AA000002AA0000001C000005 /* GeminiFeedbackService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -210,6 +213,7 @@
 				AA000003AA0000001C000001 /* RecordingService.swift in Sources */,
 				AA000003AA0000001C000002 /* ClovaSTTService.swift in Sources */,
 				AA000003AA0000001C000003 /* SpeechAnalyzer.swift in Sources */,
+				AA000003AA0000001C000005 /* GeminiFeedbackService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
