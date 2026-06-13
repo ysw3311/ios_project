@@ -319,9 +319,12 @@ class WorkspaceDetailViewController: UIViewController {
         recordsCard.isHidden = !hasRecords
         guard hasRecords else { return }
 
-        for (i, record) in workspace.records.enumerated() {
-            recordsStack.addArrangedSubview(RecordRowView(record: record))
-            if i < workspace.records.count - 1 {
+        let sorted = workspace.records.sorted { $0.date > $1.date }
+        for (i, record) in sorted.enumerated() {
+            let row = RecordRowView(record: record)
+            row.onTap = { [weak self] in self?.showRecordDetail(record) }
+            recordsStack.addArrangedSubview(row)
+            if i < sorted.count - 1 {
                 let sep = UIView()
                 sep.backgroundColor = .separator
                 sep.translatesAutoresizingMaskIntoConstraints = false
@@ -329,6 +332,24 @@ class WorkspaceDetailViewController: UIViewController {
                 sep.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
             }
         }
+    }
+
+    private func showRecordDetail(_ record: PracticeRecord) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy년 MM월 dd일 HH:mm"
+        let message = """
+        📅 \(formatter.string(from: record.date))
+
+        종합 점수: \(record.totalScore)점
+        ───────────────
+        대본 일치율: \(record.scriptScore) / 40
+        말하기 속도: \(record.speedScore) / 20
+        침묵 구간:   \(record.silenceScore) / 20
+        필러워드:    \(record.fillerScore) / 20
+        """
+        let alert = UIAlertController(title: "연습 상세", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "닫기", style: .cancel))
+        present(alert, animated: true)
     }
 
     private func refreshStartButton() {
@@ -415,12 +436,18 @@ private class StatBadgeView: UIView {
 // MARK: - RecordRowView
 
 private class RecordRowView: UIView {
+    var onTap: (() -> Void)?
+
     init(record: PracticeRecord) {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         setupViews(record: record)
+        isUserInteractionEnabled = true
+        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
     }
     required init?(coder: NSCoder) { fatalError() }
+
+    @objc private func handleTap() { onTap?() }
 
     private func setupViews(record: PracticeRecord) {
         let formatter = DateFormatter()

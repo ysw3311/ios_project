@@ -33,6 +33,12 @@ class WorkspaceListViewController: UIViewController {
             target: self,
             action: #selector(addTapped)
         )
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            title: "기록",
+            style: .plain,
+            target: self,
+            action: #selector(historyTapped)
+        )
 
         tableView.dataSource = self
         tableView.delegate = self
@@ -102,6 +108,10 @@ class WorkspaceListViewController: UIViewController {
     }
 
     // MARK: - Actions
+
+    @objc private func historyTapped() {
+        navigationController?.pushViewController(HistoryViewController(), animated: true)
+    }
 
     @objc private func addTapped() {
         let vc = WorkspaceCreateViewController()
