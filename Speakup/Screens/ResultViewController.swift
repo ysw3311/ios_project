@@ -158,8 +158,8 @@ class ResultViewController: UIViewController {
                     audioLevels: self.audioLevels
                 )
                 self.applyAnalysis(analysis)
-            case .failure:
-                self.applyDummyScores()
+            case .failure(let error):
+                self.applyDummyScores(errorMessage: error.localizedDescription)
             }
         }
     }
@@ -175,13 +175,15 @@ class ResultViewController: UIViewController {
         finishAnalysis()
     }
 
-    private func applyDummyScores() {
+    private func applyDummyScores(errorMessage: String = "") {
         scriptScore  = Int.random(in: 20...40)
         speedScore   = Int.random(in: 10...20)
         silenceScore = Int.random(in: 10...20)
         fillerScore  = Int.random(in: 10...20)
         totalScore   = scriptScore + speedScore + silenceScore + fillerScore
-        sttTextView.text = "(STT 미연결 — 더미 점수)"
+        sttTextView.text = errorMessage.isEmpty
+            ? "(STT 미연결 — 더미 점수)"
+            : "STT 오류: \(errorMessage)"
         comparisonTextView.text = "(대본 대조를 위해 STT 연결이 필요해요)"
         finishAnalysis()
     }
