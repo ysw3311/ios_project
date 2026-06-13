@@ -24,7 +24,7 @@
 * **음성 녹음 및 STT** — AVFoundation으로 발표를 녹음하고 CLOVA Speech API로 텍스트로 변환
 * **발표 분석** — 말하기 속도(WPM), 침묵 구간 횟수, 필러워드 빈도, 대본 일치율을 자동 산출
 * **종합 점수 제공** — 4개 항목을 100점 만점으로 환산하여 원형 게이지와 바 차트로 시각화
-* **AI 피드백** — Gemini 2.5 Flash 모델로 대본 vs 실제 발표를 비교 분석하여 구조화된 피드백 제공
+* **AI 피드백** — Gemini 2.5 Flash 모델로 **대사 피드백**(대본 vs STT 비교)과 **톤 피드백**(오디오 파일 직접 분석)을 각각 제공
 * **기록 관리** — 워크스페이스별 연습 기록을 저장하고 점수 변화 그래프로 성장 추이 확인
 
 ---
@@ -36,7 +36,7 @@
 * 사용자는 워크스페이스(발표 주제)를 생성하고 대본을 입력한 뒤 발표를 녹음한다.
 * 녹음이 완료되면 CLOVA Speech 장문 인식 API로 음성을 텍스트로 변환한다.
 * 변환된 텍스트와 원본 대본을 비교하여 대본 일치율, 말하기 속도, 침묵 구간, 필러워드를 분석하고 100점 만점의 종합 점수를 산출한다.
-* Gemini 2.5 Flash API가 대본과 STT 결과를 비교하여 전반 평가·잘한 점·개선할 점·핵심 조언을 카드 형태로 제공한다.
+* Gemini 2.5 Flash API가 대본·STT 텍스트와 녹음 오디오 파일을 함께 분석하여 **대사 피드백**(내용 정확도·개선점·핵심 조언)과 **톤 피드백**(목소리 톤·에너지·자신감 분석)을 카드 형태로 제공한다.
 * 연습 결과는 워크스페이스별로 저장되며 날짜별 기록 조회와 점수 변화 그래프를 제공한다.
 
 #### 2.2 화면 구성
@@ -55,9 +55,11 @@
 SceneDelegate
   └─ UINavigationController
         └─ HomeViewController (워크스페이스 목록)
-              └─ WorkspaceDetailViewController (워크스페이스 상세)
-                    └─ RecordingViewController (녹음)
-                          └─ ResultViewController (분석 결과 + AI 피드백)
+              ├─ [기록] ──────────────▶ HistoryViewController (전체 연습 기록)
+              └─ [카드 탭] ───────────▶ WorkspaceDetailViewController (워크스페이스 상세)
+                                              ├─ [대본 편집] ──▶ ScriptViewController
+                                              └─ [연습 시작] ──▶ RecordingViewController (녹음)
+                                                                     └─ ResultViewController (점수 + AI 피드백)
 ```
 
 #### 2.4 점수 산출 기준
@@ -116,7 +118,7 @@ Gemini 2.5 Flash에게 원본 대본·STT 텍스트와 오디오 파일을 함�
 |------|------|
 | Speech-To-Text | 사람이 말하는 음성 언어를 컴퓨터가 텍스트 데이터로 전환하는 기술. CLOVA Speech 장문 인식 API를 사용하여 발표 녹음 파일을 한국어 텍스트로 변환한다. |
 | 자연어 처리 (NLP) | Apple NaturalLanguage 프레임워크로 대본과 STT 결과를 토크나이징하여 단어 단위 일치율을 산출한다. |
-| 생성형 AI | Gemini 2.5 Flash 모델에 대본과 발표 내용을 전달하여 구조화된 JSON 형식의 피드백을 생성한다. |
+| 생성형 AI (멀티모달) | Gemini 2.5 Flash 모델에 대본·STT 텍스트(대사 분석)와 녹음 오디오 파일을 base64로 인코딩하여 함께 전달(톤 분석)하고, 두 가지 피드백을 구조화된 JSON으로 반환받는다. |
 | 오디오 처리 | AVFoundation을 사용하여 m4a 포맷으로 녹음하고, 실시간 음량 레벨 측정으로 파형 애니메이션을 구현한다. |
 | 로컬 데이터 저장 | UserDefaults에 Codable 구조체를 직렬화하여 워크스페이스 및 연습 기록을 영구 저장한다. |
 
