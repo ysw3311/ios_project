@@ -111,6 +111,34 @@ class ResultViewController: UIViewController {
         return btn
     }()
 
+    // MARK: - AI 피드백 뷰
+    private let feedbackSection: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+    private let feedbackSpinner: UIActivityIndicatorView = {
+        let s = UIActivityIndicatorView(style: .medium)
+        s.translatesAutoresizingMaskIntoConstraints = false
+        return s
+    }()
+    private let feedbackSpinnerLabel: UILabel = {
+        let l = UILabel()
+        l.text = "AI 피드백 생성 중..."
+        l.font = .systemFont(ofSize: 13)
+        l.textColor = .secondaryLabel
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+    private let feedbackStack: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .vertical
+        sv.spacing = 10
+        sv.isHidden = true
+        sv.translatesAutoresizingMaskIntoConstraints = false
+        return sv
+    }
+
     // 로딩 오버레이
     private let loadingView: UIView = {
         let v = UIView()
@@ -180,6 +208,91 @@ class ResultViewController: UIViewController {
         sttTextView.text = result.sttText.isEmpty ? "(인식된 텍스트 없음)" : result.sttText
         comparisonTextView.attributedText = buildComparisonAttributed(script: script, sttText: result.sttText)
         finishAnalysis()
+        requestGeminiFeedback(sttText: result.sttText)
+    }
+
+    private func requestGeminiFeedback(sttText: String) {
+        feedbackSpinner.startAnimating()
+        GeminiFeedbackService.shared.requestFeedback(script: script, sttText: sttText) { [weak self] result in
+            guard let self = self else { return }
+            self.feedbackSpinner.stopAnimating()
+            self.feedbackSpinnerLabel.isHidden = true
+            switch result {
+            case .success(let feedback):
+                self.showFeedback(feedback)
+            case .failure:
+                self.feedbackSection.isHidden = true
+            }
+        }
+    }
+
+    private func showFeedback(_ feedback: GeminiFeedback) {
+        feedbackStack.isHidden = false
+
+        // 요약 카드
+        feedbackStack.addArrangedSubview(makeFeedbackCard(
+            title: "전반 평가", body: feedback.summary, color: .systemBlue
+        ))
+
+        // 잘한 점 + 개선점 나란히
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.spacing = 10
+        row.distribution = .fillEqually
+        row.addArrangedSubview(makeFeedbackCard(
+            title: "잘한 점", bullets: feedback.strengths, color: .systemGreen
+        ))
+        row.addArrangedSubview(makeFeedbackCard(
+            title: "개선할 점", bullets: feedback.improvements, color: .systemOrange
+        ))
+        feedbackStack.addArrangedSubview(row)
+
+        // 핵심 조언 카드
+        feedbackStack.addArrangedSubview(makeFeedbackCard(
+            title: "핵심 조언", body: feedback.tip, color: .systemPurple
+        ))
+    }
+
+    private func makeFeedbackCard(title: String, body: String = "", bullets: [String] = [], color: UIColor) -> UIView {
+        let card = UIView()
+        card.backgroundColor = color.withAlphaComponent(0.08)
+        card.layer.cornerRadius = 12
+        card.layer.borderColor = color.withAlphaComponent(0.3).cgColor
+        card.layer.borderWidth = 1
+        card.translatesAutoresizingMaskIntoConstraints = false
+
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .boldSystemFont(ofSize: 13)
+        titleLabel.textColor = color
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let bodyLabel = UILabel()
+        bodyLabel.numberOfLines = 0
+        bodyLabel.font = .systemFont(ofSize: 14)
+        bodyLabel.textColor = .label
+        bodyLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        if !body.isEmpty {
+            bodyLabel.text = body
+        } else {
+            bodyLabel.text = bullets.map { "• \($0)" }.joined(separator: "\n")
+        }
+
+        card.addSubview(titleLabel)
+        card.addSubview(bodyLabel)
+
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
+            titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
+            titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
+
+            bodyLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            bodyLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
+            bodyLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
+            bodyLabel.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12),
+        ])
+        return card
     }
 
     private func applyDummyScores(errorMessage: String = "") {
@@ -292,6 +405,34 @@ class ResultViewController: UIViewController {
         comparisonCard.addSubview(comparisonTextView)
         contentView.addSubview(comparisonCard)
 
+        // AI 피드백 섹션
+        let feedbackTitleLabel = UILabel()
+        feedbackTitleLabel.text = "AI 피드백"
+        feedbackTitleLabel.font = .boldSystemFont(ofSize: 17)
+        feedbackTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        feedbackSection.addSubview(feedbackTitleLabel)
+        feedbackSection.addSubview(feedbackSpinner)
+        feedbackSection.addSubview(feedbackSpinnerLabel)
+        feedbackSection.addSubview(feedbackStack)
+        contentView.addSubview(feedbackSection)
+
+        NSLayoutConstraint.activate([
+            feedbackTitleLabel.topAnchor.constraint(equalTo: feedbackSection.topAnchor),
+            feedbackTitleLabel.leadingAnchor.constraint(equalTo: feedbackSection.leadingAnchor),
+
+            feedbackSpinner.topAnchor.constraint(equalTo: feedbackTitleLabel.bottomAnchor, constant: 12),
+            feedbackSpinner.leadingAnchor.constraint(equalTo: feedbackSection.leadingAnchor),
+
+            feedbackSpinnerLabel.centerYAnchor.constraint(equalTo: feedbackSpinner.centerYAnchor),
+            feedbackSpinnerLabel.leadingAnchor.constraint(equalTo: feedbackSpinner.trailingAnchor, constant: 8),
+
+            feedbackStack.topAnchor.constraint(equalTo: feedbackTitleLabel.bottomAnchor, constant: 10),
+            feedbackStack.leadingAnchor.constraint(equalTo: feedbackSection.leadingAnchor),
+            feedbackStack.trailingAnchor.constraint(equalTo: feedbackSection.trailingAnchor),
+            feedbackStack.bottomAnchor.constraint(equalTo: feedbackSection.bottomAnchor),
+        ])
+
         contentView.addSubview(backButton)
 
         NSLayoutConstraint.activate([
@@ -337,9 +478,13 @@ class ResultViewController: UIViewController {
             comparisonTextView.topAnchor.constraint(equalTo: comparisonTitleLabel.bottomAnchor, constant: 8),
             comparisonTextView.bottomAnchor.constraint(equalTo: comparisonCard.bottomAnchor, constant: -8),
 
+            feedbackSection.topAnchor.constraint(equalTo: comparisonCard.bottomAnchor, constant: 28),
+            feedbackSection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            feedbackSection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+
             backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             backButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
-            backButton.topAnchor.constraint(equalTo: comparisonCard.bottomAnchor, constant: 24),
+            backButton.topAnchor.constraint(equalTo: feedbackSection.bottomAnchor, constant: 24),
             backButton.heightAnchor.constraint(equalToConstant: 52),
             backButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
         ])
