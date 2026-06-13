@@ -121,6 +121,30 @@ extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         records.isEmpty ? nil : "날짜별 연습 기록 (\(records.count)회)"
     }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let r = records[indexPath.row]
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy년 MM월 dd일 HH:mm"
+
+        let message = """
+        📅 \(formatter.string(from: r.date))
+        🏢 \(r.workspaceName)
+
+        종합 점수: \(r.totalScore)점
+        ───────────────
+        대본 일치율: \(r.scriptScore) / 40
+        말하기 속도: \(r.speedScore) / 20
+        침묵 구간:   \(r.silenceScore) / 20
+        필러워드:    \(r.fillerScore) / 20
+        """
+
+        let alert = UIAlertController(title: "연습 상세", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "닫기", style: .cancel))
+        present(alert, animated: true)
+    }
 }
 
 // MARK: - HistoryCell
