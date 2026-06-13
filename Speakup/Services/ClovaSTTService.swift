@@ -37,14 +37,33 @@ final class ClovaSTTService {
 
         print("📤 오디오 전송 중... (\(audioData.count) bytes)")
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-        // invoke URL은 URL 자체에 인증 포함, 기본 API는 헤더 필요
+        let request: URLRequest
         if invokeURLString.isEmpty {
-            request.setValue(apiKey, forHTTPHeaderField: "X-CLOVASPEECH-API-KEY")
+            // 단문 인식: octet-stream + API Key 헤더
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            req.setValue(apiKey, forHTTPHeaderField: "X-CLOVASPEECH-API-KEY")
+            req.httpBody = audioData
+            request = req
+        } else {
+            // 장문 인식 invoke URL: multipart/form-data (인증은 URL에 포함)
+            let boundary = "Boundary-\(UUID().uuidString)"
+            var body = Data()
+            let filename = fileURL.lastPathComponent
+
+            body.appendString("--\(boundary)\r\n")
+            body.appendString("Content-Disposition: form-data; name=\"media\"; filename=\"\(filename)\"\r\n")
+            body.appendString("Content-Type: application/octet-stream\r\n\r\n")
+            body.append(audioData)
+            body.appendString("\r\n--\(boundary)--\r\n")
+
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            req.httpBody = body
+            request = req
         }
-        request.httpBody = audioData
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -81,10 +100,16 @@ final class ClovaSTTService {
 
         var errorDescription: String? {
             switch self {
-            case .invalidURL(let u):  return "URL 오류: \(u)"
+            case .invalidURL(let u):    return "URL 오류: \(u)"
             case .fileReadError(let p): return "파일 읽기 실패: \(p)"
-            case .parseError(let b):  return "응답 파싱 실패: \(b)"
+            case .parseError(let b):    return "응답 파싱 실패: \(b)"
             }
         }
+    }
+}
+
+private extension Data {
+    mutating func appendString(_ string: String) {
+        if let data = string.data(using: .utf8) { append(data) }
     }
 }
