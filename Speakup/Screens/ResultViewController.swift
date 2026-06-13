@@ -213,7 +213,11 @@ class ResultViewController: UIViewController {
 
     private func requestGeminiFeedback(sttText: String) {
         feedbackSpinner.startAnimating()
-        GeminiFeedbackService.shared.requestFeedback(script: script, sttText: sttText) { [weak self] result in
+        GeminiFeedbackService.shared.requestFeedback(
+            script: script,
+            sttText: sttText,
+            audioFileURL: audioFileURL
+        ) { [weak self] result in
             guard let self = self else { return }
             self.feedbackSpinner.stopAnimating()
             self.feedbackSpinnerLabel.isHidden = true
@@ -229,28 +233,64 @@ class ResultViewController: UIViewController {
     private func showFeedback(_ feedback: GeminiFeedback) {
         feedbackStack.isHidden = false
 
-        // 요약 카드
+        // ── 대사 피드백 ──
+        feedbackStack.addArrangedSubview(makeSectionHeader("대사 피드백", color: .systemBlue))
         feedbackStack.addArrangedSubview(makeFeedbackCard(
-            title: "전반 평가", body: feedback.summary, color: .systemBlue
+            title: "전반 평가", body: feedback.script.summary, color: .systemBlue
+        ))
+        if !feedback.script.improvements.isEmpty {
+            feedbackStack.addArrangedSubview(makeFeedbackCard(
+                title: "개선할 점", bullets: feedback.script.improvements, color: .systemOrange
+            ))
+        }
+        feedbackStack.addArrangedSubview(makeFeedbackCard(
+            title: "핵심 조언", body: feedback.script.tip, color: .systemPurple
         ))
 
-        // 잘한 점 + 개선점 나란히
-        let row = UIStackView()
-        row.axis = .horizontal
-        row.spacing = 10
-        row.distribution = .fillEqually
-        row.addArrangedSubview(makeFeedbackCard(
-            title: "잘한 점", bullets: feedback.strengths, color: .systemGreen
-        ))
-        row.addArrangedSubview(makeFeedbackCard(
-            title: "개선할 점", bullets: feedback.improvements, color: .systemOrange
-        ))
-        feedbackStack.addArrangedSubview(row)
-
-        // 핵심 조언 카드
+        // ── 톤 피드백 ──
+        let toneHeader = makeSectionHeader("톤 피드백", color: .systemIndigo)
+        toneHeader.directionalLayoutMargins.top = 8
+        feedbackStack.addArrangedSubview(toneHeader)
         feedbackStack.addArrangedSubview(makeFeedbackCard(
-            title: "핵심 조언", body: feedback.tip, color: .systemPurple
+            title: "전반 평가", body: feedback.tone.summary, color: .systemIndigo
         ))
+        if !feedback.tone.improvements.isEmpty {
+            feedbackStack.addArrangedSubview(makeFeedbackCard(
+                title: "개선할 점", bullets: feedback.tone.improvements, color: .systemPink
+            ))
+        }
+        feedbackStack.addArrangedSubview(makeFeedbackCard(
+            title: "핵심 조언", body: feedback.tone.tip, color: .systemTeal
+        ))
+    }
+
+    private func makeSectionHeader(_ title: String, color: UIColor) -> UIView {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = UILabel()
+        label.text = title
+        label.font = .boldSystemFont(ofSize: 15)
+        label.textColor = color
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        let line = UIView()
+        line.backgroundColor = color.withAlphaComponent(0.3)
+        line.translatesAutoresizingMaskIntoConstraints = false
+
+        container.addSubview(label)
+        container.addSubview(line)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+
+            line.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            line.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            line.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 6),
+            line.heightAnchor.constraint(equalToConstant: 1),
+            line.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
+        return container
     }
 
     private func makeFeedbackCard(title: String, body: String = "", bullets: [String] = [], color: UIColor) -> UIView {
