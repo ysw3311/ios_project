@@ -16,9 +16,10 @@ final class ClovaSTTService {
     }
 
     func transcribe(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
+        // 장문 인식: {invokeUrl}/recognizer/upload, 단문 인식: /recog/v1/stt?lang=Kor
         let urlString = invokeURLString.isEmpty
             ? "https://clovaspeech-gw.ncloud.com/recog/v1/stt?lang=Kor"
-            : invokeURLString
+            : invokeURLString + "/recognizer/upload"
 
         print("🌐 STT URL:", urlString)
         print("🔑 API Key:", apiKey.isEmpty ? "(없음)" : apiKey.prefix(8).description + "...")
@@ -39,7 +40,7 @@ final class ClovaSTTService {
 
         let request: URLRequest
         if invokeURLString.isEmpty {
-            // 단문 인식: octet-stream + API Key 헤더
+            // 단문 인식: raw binary + API Key 헤더
             var req = URLRequest(url: url)
             req.httpMethod = "POST"
             req.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
@@ -47,20 +48,31 @@ final class ClovaSTTService {
             req.httpBody = audioData
             request = req
         } else {
-            // 장문 인식 invoke URL: multipart/form-data (인증은 URL에 포함)
+            // 장문 인식: multipart/form-data (params JSON + media 파일)
             let boundary = "Boundary-\(UUID().uuidString)"
             var body = Data()
             let filename = fileURL.lastPathComponent
 
+            // Part 1: params
+            let params: [String: Any] = ["language": "ko-KR", "completion": "sync"]
+            let paramsData = (try? JSONSerialization.data(withJSONObject: params)) ?? Data()
+            body.appendString("--\(boundary)\r\n")
+            body.appendString("Content-Disposition: form-data; name=\"params\"\r\n")
+            body.appendString("Content-Type: application/json\r\n\r\n")
+            body.append(paramsData)
+            body.appendString("\r\n")
+
+            // Part 2: media
             body.appendString("--\(boundary)\r\n")
             body.appendString("Content-Disposition: form-data; name=\"media\"; filename=\"\(filename)\"\r\n")
-            body.appendString("Content-Type: application/octet-stream\r\n\r\n")
+            body.appendString("Content-Type: audio/mp4\r\n\r\n")
             body.append(audioData)
             body.appendString("\r\n--\(boundary)--\r\n")
 
             var req = URLRequest(url: url)
             req.httpMethod = "POST"
             req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            req.setValue(apiKey, forHTTPHeaderField: "X-CLOVASPEECH-API-KEY")
             req.httpBody = body
             request = req
         }
