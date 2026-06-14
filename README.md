@@ -165,6 +165,6 @@ Speakup/
 
 ---
 
-### 7. 데모 영상
+### 7. 발표 영상
 
-추후 업로드 예정
+https://youtu.be/rUga3LLEhmU
